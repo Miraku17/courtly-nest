@@ -11,7 +11,7 @@ export class AuthService {
     const { data, error } = await this.supabase.client.auth.admin.createUser({
       email: dto.email,
       password: dto.password,
-      email_confirm: false, // sends confirmation email; set true to skip in dev
+      email_confirm: true, // sends confirmation email; set true to skip in dev
       user_metadata: {
         first_name: dto.firstName,
         last_name: dto.lastName,
