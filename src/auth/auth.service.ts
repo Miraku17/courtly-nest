@@ -66,6 +66,18 @@ export class AuthService {
       throw new InternalServerErrorException(error.message);
     }
 
+    // Fetch role from profiles table
+    const { data: profile, error: profileError } = await this.supabase.client
+      .from('profiles')
+      .select('role')
+      .eq('id', data.user.id)
+      .single();
+
+    if (profileError) {
+      console.error('Profile fetch error:', profileError);
+      throw new InternalServerErrorException('Failed to fetch user profile.');
+    }
+
     return {
       session: {
         accessToken: data.session.access_token,
@@ -74,6 +86,7 @@ export class AuthService {
       user: {
         id: data.user.id,
         email: data.user.email,
+        role: profile.role,
       },
     };
   }
