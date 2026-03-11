@@ -1,10 +1,10 @@
-import { BadRequestException, Injectable, InternalServerErrorException } from '@nestjs/common';
+import { BadRequestException, Injectable, InternalServerErrorException, UnauthorizedException, ForbiddenException } from '@nestjs/common';
 import { SupabaseService } from '../supabase/supabase.service';
 import { SignUpDto } from './dto/signup.dto';
-
+import { SignInDto } from './dto/signin.dto';
 @Injectable()
 export class AuthService {
-  constructor(private supabase: SupabaseService) {}
+  constructor(private supabase: SupabaseService) { }
 
   async signUp(dto: SignUpDto) {
     // 1. Create the user in Supabase Auth
@@ -47,6 +47,33 @@ export class AuthService {
         id: userId,
         email: data.user.email,
         role: dto.role,
+      },
+    };
+  }
+
+
+  async signIn(dto: SignInDto) {
+
+    const { data, error } = await this.supabase.client.auth.signInWithPassword({ email: dto.email, password: dto.password })
+
+    if (error) {
+      if (error.message.includes('Invalid login credentials')) {
+        throw new UnauthorizedException('Invalid email or password.');
+      }
+      if (error.message.includes('Email not confirmed')) {
+        throw new ForbiddenException('Please confirm your email before signing in.');
+      }
+      throw new InternalServerErrorException(error.message);
+    }
+
+    return {
+      session: {
+        accessToken: data.session.access_token,
+        refreshToken: data.session.refresh_token,
+      },
+      user: {
+        id: data.user.id,
+        email: data.user.email,
       },
     };
   }
