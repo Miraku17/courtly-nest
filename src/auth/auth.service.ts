@@ -90,4 +90,15 @@ export class AuthService {
       },
     };
   }
+
+  async signOut() {
+
+
+    const { error } = await this.supabase.client.auth.signOut()
+
+    if (error) {
+
+      throw new InternalServerErrorException(error.message);
+    }
+  }
 }

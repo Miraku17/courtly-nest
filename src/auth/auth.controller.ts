@@ -6,11 +6,21 @@ import * as express from 'express';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private authService: AuthService) {}
+  constructor(private authService: AuthService) { }
 
   @Post('signup')
   signUp(@Body() dto: SignUpDto) {
     return this.authService.signUp(dto);
+  }
+
+  @Post('signout')
+  async signout(@Res() res: express.Response) {
+    await this.authService.signOut();
+
+    res.clearCookie('access_token', { path: '/' });
+
+    return res.json({ message: 'Signed out successfully.' });
+
   }
 
   @Post('signin')
