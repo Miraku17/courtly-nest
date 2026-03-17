@@ -4,7 +4,7 @@ import { UpdateProfileDto } from './dto/update-profile.dto';
 
 @Injectable()
 export class ProfilesService {
-  constructor(private supabase: SupabaseService) {}
+  constructor(private supabase: SupabaseService) { }
 
   async updateProfile(userId: string, dto: UpdateProfileDto) {
     const updateData: Record<string, string> = {};
@@ -26,4 +26,22 @@ export class ProfilesService {
 
     return { message: 'Profile updated successfully.', profile: data };
   }
+
+  async getProfile(userId: string) {
+
+    const { data, error } = await this.supabase.client
+      .from('profiles')
+      .select()
+      .eq('id', userId)
+      .single();
+
+    if (error) {
+      throw new InternalServerErrorException(error.message);
+    }
+
+    const { data: authData, error: authError } = await this.supabase.client.auth.admin.getUserById(userId);
+
+    return { profile: { ...data, email: authData?.user?.email ?? null } };
+  }
+
 }
