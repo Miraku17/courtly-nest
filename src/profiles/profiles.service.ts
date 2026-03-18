@@ -1,4 +1,4 @@
-import { Injectable, InternalServerErrorException } from '@nestjs/common';
+import { BadRequestException, Injectable, InternalServerErrorException } from '@nestjs/common';
 import { SupabaseService } from '../supabase/supabase.service';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 
@@ -42,6 +42,40 @@ export class ProfilesService {
     const { data: authData, error: authError } = await this.supabase.client.auth.admin.getUserById(userId);
 
     return { profile: { ...data, email: authData?.user?.email ?? null } };
+  }
+
+  async uploadAvatar(userId: string, file: Express.Multer.File) {
+    if (!file) {
+      throw new BadRequestException('No file provided.');
+    }
+
+    const ext = file.originalname.split('.').pop();
+    const filePath = `${userId}/avatar.${ext}`;
+
+    const { error: uploadError } = await this.supabase.client.storage
+      .from('avatars')
+      .upload(filePath, file.buffer, { upsert: true, contentType: file.mimetype });
+
+    if (uploadError) {
+      throw new InternalServerErrorException(uploadError.message);
+    }
+
+    const { data: urlData } = this.supabase.client.storage
+      .from('avatars')
+      .getPublicUrl(filePath);
+
+    const publicUrl = urlData.publicUrl;
+
+    const { error: updateError } = await this.supabase.client
+      .from('profiles')
+      .update({ avatar_url: publicUrl })
+      .eq('id', userId);
+
+    if (updateError) {
+      throw new InternalServerErrorException(updateError.message);
+    }
+
+    return { message: 'Avatar uploaded successfully.', avatarUrl: publicUrl };
   }
 
 }
